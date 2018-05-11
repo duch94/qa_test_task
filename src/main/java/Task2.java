@@ -7,9 +7,16 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 public class Task2 {
-    private String rootUrl = "https://swapi.co/api/";
-    private String format = "?format=json";
-    private String format2nd = "&format=json";
+    private final String rootUrl = "https://swapi.co/api/";
+    private final String format = "?format=json";
+    private final String format2nd = "&format=json";
+
+    private final String YELLOW = "\033[0;33m";
+    private final String CYAN = "\033[0;36m";
+    private final String BLUE = "\u001B[34m";
+    private final String GREEN = "\u001B[32m";
+    private final String RED = "\u001B[31m";
+    private final String RESET = "\033[0m";
 
     public String getRequestSender(String urlString) {
         String responseLine = "";
@@ -116,17 +123,60 @@ public class Task2 {
         return result;
     }
 
-    public void assertion(String funcName, Object received, Object actual) {
-        String BLUE = "\u001B[34m";
-        String GREEN = "\u001B[32m";
-        String RED = "\u001B[31m";
-        String RESET = "\033[0m";
+    private boolean starshipIsFromThirdEpisode(JSONObject starship) {
+        JSONArray films = starship.getJSONArray("films");
+        for (int i = 0; i < films.length(); i++) {
+            JSONObject film = new JSONObject(getRequestSender(films.getString(i) + format));
+            if (film.getInt("episode_id") == 3) {
+                return true;
+            }
+        }
+        return false;
+    }
 
-        System.out.print(BLUE + funcName + " must be " + actual + ": ");
+    public String obiWanStarShipFromThirdEpisode() {
+        String obiWanSearchMethod = "people/?search=Obi-Wan%20Kenobi";
+        String resp = getRequestSender(rootUrl + obiWanSearchMethod + format2nd);
+        String result = "";
+
+        JSONObject obiWan = new JSONObject(resp).getJSONArray("results").getJSONObject(0);
+        JSONArray obiWanStarships = obiWan.getJSONArray("starships");
+
+        System.out.println(CYAN + "Obiwan's starships characteristics: " + RESET);
+        // пройтись по всем кораблям и найти те которые были в 3 эпизоде и взять их названия
+        String obiwanStarshipsFromThirdEpisode = "";
+        JSONObject currentStarship = null;
+        for (int i = 0; i < obiWanStarships.length(); i++) {
+            String currentStarshipString = getRequestSender(obiWanStarships.getString(i) + format);
+            currentStarship = new JSONObject(currentStarshipString);
+            if (starshipIsFromThirdEpisode(currentStarship)) {
+                obiwanStarshipsFromThirdEpisode += currentStarship.getString("name") + ", ";
+                System.out.println(CYAN + currentStarshipString + RESET);
+            }
+        }
+
+        obiwanStarshipsFromThirdEpisode =
+                obiwanStarshipsFromThirdEpisode.substring(0, obiwanStarshipsFromThirdEpisode.length() - 2);
+        return obiwanStarshipsFromThirdEpisode;
+    }
+
+    public boolean does100CharacterExists() {
+        String charactersListMethod = "people/";
+        JSONObject charactersCurrentPage = new JSONObject(getRequestSender(rootUrl + charactersListMethod + format));
+        final int maxCharacters = 100;
+        int charactersCurrentQuantity = charactersCurrentPage.getInt("count");
+        if (charactersCurrentQuantity >= maxCharacters) {
+            return true;
+        }
+        return false;
+    }
+
+    public void assertion(String funcName, Object received, Object actual) {
+        System.out.print(BLUE + funcName + " must be " + YELLOW + actual + BLUE + ": ");
         if (received.equals(actual)) {
             System.out.println(GREEN + "OK!" + RESET);
         } else {
-            System.out.println(RED + "Assertion error" + RESET);
+            System.out.println(RED + "Assertion error, must be " + actual + RESET);
         }
     }
 
@@ -139,5 +189,7 @@ public class Task2 {
         self.assertion("titleOfForthEpisode", self.titleOfForthEpisode(), "A New Hope");
         self.assertion("planetsFromSecondEpisode", self.planetsFromSecondEpisode(), "Naboo, Coruscant, Kamino, Geonosis, Tatooine");
         self.assertion("lukeMotherlandPlanet", self.lukeMotherlandPlanet(), "Tatooine");
+        self.assertion("obiWanStarShipFromThirdEpisode", self.obiWanStarShipFromThirdEpisode(), "Jedi starfighter, Trade Federation cruiser, Naboo star skiff, Jedi Interceptor, Belbullab-22 starfighter");
+        self.assertion("does100CharacterExists", self.does100CharacterExists(), false);
     }
 }
